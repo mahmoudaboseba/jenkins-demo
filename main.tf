@@ -80,7 +80,7 @@ resource "aws_instance" "apache" {
   ami           = "ami-08b5b3a93ed654d19"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.pub-sub.id
-    key_name      = aws_key_pair.generaated_key.key_name
+    key_name      = aws_key_pair.generated_key.key_name
 
 
   tags = {
@@ -139,13 +139,4 @@ resource "aws_vpc" "vpc-main2" {
     tags = {
         Name = "VPC-aswaniti1"
     }
-output "instance_public_ip" {
-  value = aws_instance.apache.public_ip
-}
-
-output "ssh_command" {
-  value = "ssh -i ec2_key.pem ec2-user@${aws_instance.apache.public_ip}"
-}
-  
-}
 
