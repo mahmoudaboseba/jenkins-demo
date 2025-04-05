@@ -24,11 +24,9 @@ pipeline {
                 }
             }
 
-        
-       
-
-        stage('Run Terraform') {
+     stage('Run Terraform') {
             steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIALS, accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     dir(TERRAFORM_DIR) {
                         sh '''
                             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -36,12 +34,13 @@ pipeline {
                             terraform init
                            # terraform destroy -auto-approve
                             terraform apply -auto-approve
-                           
+                
                         '''
                     }
                 }
             }
         }
     }
+}
 
   
