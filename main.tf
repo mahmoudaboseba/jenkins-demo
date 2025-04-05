@@ -2,6 +2,18 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Generate Ansible inventory file
+resource "local_file" "ansible_inventory" {
+  filename = "${path.module}/inventory.ini"
+  content = <<-EOT
+    [webservers]
+    ${aws_instance.apache.public_ip} ansible_user=ec2-user ansible_ssh_private_key_file=${path.module}/ec2_key.pem
+
+    [webservers:vars]
+    ansible_python_interpreter=/usr/bin/python3
+  EOT
+}
+
 # Create a new key pair
 resource "tls_private_key" "ec2_key" {
   algorithm = "RSA"
