@@ -1,46 +1,54 @@
 pipeline {
-    agent any
-    tools {
-  terraform 'terraform'
-}
 
+    parameters {
+        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
+    } 
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws_access_key')
-        AWS_SECRET_ACCESS_KEY = credentials('aws_secret_access_key')
-        TF_KEY_FILE          = 'ec2_key.pem'
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
-    
-    stages { 
-        stage('Terraform Init/Apply') {
+
+   agent  any
+    stages {
+        stage('checkout') {
             steps {
-                dir('terraform') {
-                    sh 'terraform init'
-                    sh 'terraform apply -auto-approve'
-                    
-                    // Save private key with secure permissions
-                    sh 'terraform output -raw private_key > ../${TF_KEY_FILE}'
-                    sh 'chmod 600 ../${TF_KEY_FILE}'
-                    
-                    // Capture EC2 IP
-                    script {
-                        env.EC2_IP = sh(script: 'terraform output -raw instance_public_ip', returnStdout: true).trim()
+                 script{
+                        dir("terraform")
+                        {
+                            git "https://github.com/yeshwanthlm/Terraform-Jenkins.git"
+                        }
                     }
                 }
             }
-        }
-        
-        stage('SSH Configuration Test') {
+
+        stage('Plan') {
             steps {
-                script {
-                    // Test SSH connection
-                    sh """
-                    ssh -i ${TF_KEY_FILE} \
-                        -o StrictHostKeyChecking=no \
-                        -o UserKnownHostsFile=/dev/null \
-                        ec2-user@${env.EC2_IP} 'hostname'
-                    """
-                }
+                sh 'pwd;cd terraform/ ; terraform init'
+                sh "pwd;cd terraform/ ; terraform plan -out tfplan"
+                sh 'pwd;cd terraform/ ; terraform show -no-color tfplan > tfplan.txt'
             }
         }
-    }  
-}
+        stage('Approval') {
+           when {
+               not {
+                   equals expected: true, actual: params.autoApprove
+               }
+           }
+
+           steps {
+               script {
+                    def plan = readFile 'terraform/tfplan.txt'
+                    input message: "Do you want to apply the plan?",
+                    parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
+               }
+           }
+       }
+
+        stage('Apply') {
+            steps {
+                sh "pwd;cd terraform/ ; terraform apply -input=false tfplan"
+            }
+        }
+    }
+
+  }
