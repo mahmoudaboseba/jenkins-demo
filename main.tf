@@ -1,13 +1,32 @@
+# Generate a new RSA key pair
+resource "tls_private_key" "ec2_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Save the private key locally with secure permissions
+resource "local_file" "private_key" {
+  filename        = "${path.module}/ec2_key.pem"
+  content         = tls_private_key.ec2_key.private_key_pem
+  file_permission = "0600"  # Owner read/write only
+}
+
+# Upload the public key to AWS
 resource "aws_key_pair" "generated_key" {
-  key_name   = "ec2-key-${timestamp()}"  # Unique name
+  key_name   = "ec2-key-${sha256(tls_private_key.ec2_key.public_key_openssh)}" # Stable name based on key content
   public_key = tls_private_key.ec2_key.public_key_openssh
 }
 
+# Output the private key (sensitive)
 output "private_key" {
   value     = tls_private_key.ec2_key.private_key_pem
-  sensitive = true 
+  sensitive = true
 }
 
+# Output the key name for reference
+output "key_name" {
+  value = aws_key_pair.generated_key.key_name
+}
 output "instance_public_ip" {
   description = "Public IP address of the EC2 instance"
   value       = aws_instance.apache.public_ip
