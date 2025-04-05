@@ -139,4 +139,5 @@ resource "aws_vpc" "vpc-main2" {
     tags = {
         Name = "VPC-aswaniti1"
     }
+}
 
