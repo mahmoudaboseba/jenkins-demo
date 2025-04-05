@@ -1,0 +1,21 @@
+---
+- name: Install and Configure Apache (httpd)
+  hosts: ec2-user  # Target group defined in inventory
+  become: true    # Run as root
+
+  tasks:
+    - name: Install httpd
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+
+    - name: Start and enable httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Ensure default HTML page exists
+      ansible.builtin.copy:
+        content: "<h1>Hello from Ansible + Jenkins!</h1>"
+        dest: /var/www/html/index.html
