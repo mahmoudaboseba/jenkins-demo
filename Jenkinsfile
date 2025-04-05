@@ -49,7 +49,7 @@ pipeline {
                     dir(ANSIBLE_DIR) {
                         sh '''
                           //  cat inventory
-                            ansible-playbook -i inventory install_httpd.yml
+                            ansible-playbook -i inventory httpd_install.yml
                         '''
                     }
                 }
