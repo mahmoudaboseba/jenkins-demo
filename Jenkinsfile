@@ -49,7 +49,9 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIALS, accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     dir(ANSIBLE_DIR) {
                         sh '''
-                            ansible-playbook -i inventory httpd_install.yml
+                             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                            ansible-playbook -i inventory ./httpd_install.yml
                         '''
                     }
                 }
