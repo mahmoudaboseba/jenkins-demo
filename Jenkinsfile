@@ -1,37 +1,43 @@
 pipeline {
-     agent any
-    parameters {
-        booleanParam(name:'project', defaultValue: true, description:'this paramater help you to know project name')
-        choice(name: 'namespace', choices:['dev','prod','stage'], description: '' ) 
+    agent any
+    
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws_access_key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws_secret_access_key')
+        TF_KEY_FILE          = 'ec2_key.pem'
     }
-
-    stages {
-        stage('check') {
+    
+    stages { 
+        stage('Terraform Init/Apply') {
             steps {
-                echo "checking your code"
-                
-               
-            }
-        }
-
-        stage('test') {
-            when {
-                expression{
-                    params.project == false
+                dir('terraform') {
+                    sh 'terraform init'
+                    sh 'terraform apply -auto-approve'
+                    
+                    // Save private key with secure permissions
+                    sh 'terraform output -raw private_key > ../${TF_KEY_FILE}'
+                    sh 'chmod 600 ../${TF_KEY_FILE}'
+                    
+                    // Capture EC2 IP
+                    script {
+                        env.EC2_IP = sh(script: 'terraform output -raw instance_public_ip', returnStdout: true).trim()
+                    }
                 }
-            }
-            steps {
-                echo "testing your app" 
             }
         }
         
-        stage('deployment') {  
+        stage('SSH Configuration Test') {
             steps {
-                echo "kubectl apply -f deployment.yaml -n $params.namespace"
-                echo "your code is deployed right now"
-                echo "this build number $BUILD_NUMBER"
+                script {
+                    // Test SSH connection
+                    sh """
+                    ssh -i ${TF_KEY_FILE} \
+                        -o StrictHostKeyChecking=no \
+                        -o UserKnownHostsFile=/dev/null \
+                        ec2-user@${env.EC2_IP} 'hostname'
+                    """
+                }
             }
-        }    
-    }
-
+        }
+    }  
 }
