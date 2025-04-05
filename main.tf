@@ -1,5 +1,3 @@
-
-
 provider "aws" {
   region = "us-east-1"
 }
@@ -64,7 +62,14 @@ resource "aws_instance" "apache" {
   ami           = "ami-08b5b3a93ed654d19"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.pub-sub.id
-  key_name      = aws_key_pair.generated_key.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install -y httpd
+              systemctl enable --now httpd
+              echo "Hello, Apache is running on this EC2 instance by user mahmoud!" > /var/www/html/index.html
+              EOF
+
   tags = {
     Name = "apache_machine"
   }
