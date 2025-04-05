@@ -2,6 +2,24 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Create a new key pair
+resource "tls_private_key" "ec2_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "private_key" {
+  content  = tls_private_key.ec2_key.private_key_pem
+  filename = "${path.module}/ec2_key.pem"
+  file_permission = "0600"  # More secure permission for private keys
+}
+
+# Upload the public key to AWS
+resource "aws_key_pair" "generated_key" {
+  key_name   = "ec2-key-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  public_key = tls_private_key.ec2_key.public_key_openssh
+}
+
 resource "aws_network_interface_sg_attachment" "sg_attachment" {
   security_group_id    = aws_security_group.allow_traffic_apache.id
   network_interface_id = aws_instance.apache.primary_network_interface_id
@@ -62,13 +80,8 @@ resource "aws_instance" "apache" {
   ami           = "ami-08b5b3a93ed654d19"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.pub-sub.id
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              yum install -y httpd
-              systemctl enable --now httpd
-              echo "Hello, Apache is running on this EC2 instance by user mahmoud!" > /var/www/html/index.html
-              EOF
+    key_name      = aws_key_pair.generaated_key.key_name
+
 
   tags = {
     Name = "apache_machine"
@@ -126,6 +139,13 @@ resource "aws_vpc" "vpc-main2" {
     tags = {
         Name = "VPC-aswaniti1"
     }
+output "instance_public_ip" {
+  value = aws_instance.apache.public_ip
+}
+
+output "ssh_command" {
+  value = "ssh -i ec2_key.pem ec2-user@${aws_instance.apache.public_ip}"
+}
   
 }
 
