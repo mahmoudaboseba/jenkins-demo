@@ -1,0 +1,18 @@
+- name: Install and configure Apache HTTPD
+  hosts: all
+  become: yes  # Run as root
+
+  tasks:
+    # 1. Install httpd using yum
+    - name: Install Apache (httpd)
+      yum:
+        name: httpd
+        state: present
+        update_cache: yes  # Equivalent to 'yum update'
+
+    # 2. Start and enable httpd service
+    - name: Ensure httpd is running and enabled
+      service:
+        name: httpd
+        state: started
+        enabled: yes
