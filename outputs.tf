@@ -8,5 +8,5 @@ output "ssh_command" {
   value = "ssh -i ec2_key.pem ec2-user@${aws_instance.apache.public_ip}"
 }
   
-}
+
 
