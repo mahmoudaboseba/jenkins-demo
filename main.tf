@@ -1,3 +1,18 @@
+resource "aws_key_pair" "generated_key" {
+  key_name   = "ec2-key-${timestamp()}"  # Unique name
+  public_key = tls_private_key.ec2_key.public_key_openssh
+}
+
+output "private_key" {
+  value     = tls_private_key.ec2_key.private_key_pem
+  sensitive = true 
+}
+
+output "instance_public_ip" {
+  description = "Public IP address of the EC2 instance"
+  value       = aws_instance.apache.public_ip
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -62,14 +77,7 @@ resource "aws_instance" "apache" {
   ami           = "ami-08b5b3a93ed654d19"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.pub-sub.id
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              yum install -y httpd
-              systemctl enable --now httpd
-              echo "Hello, Apache is running on this EC2 instance by user mahmoud!" > /var/www/html/index.html
-              EOF
-
+  key_name      = aws_key_pair.generated_key.key_name
   tags = {
     Name = "apache_machine"
   }
