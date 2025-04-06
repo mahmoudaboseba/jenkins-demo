@@ -7,7 +7,7 @@ resource "local_file" "ansible_inventory" {
   filename = "${path.module}/inventory.ini"
   content = <<-EOT
     [webservers]
-    ${aws_instance.apache.public_ip} ansible_user=ec2-user ansible_ssh_private_key_file=${path.module}/ec2_key.pem
+    ${aws_instance.apache.public_ip} ansible_user=ec2-user ansible_ssh_private_key_file=/var/jenkins_home/workspace/aws/terraform/ec2_key.pem
 
     [webservers:vars]
     ansible_python_interpreter=/usr/bin/python3
