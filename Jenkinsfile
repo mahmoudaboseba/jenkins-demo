@@ -51,7 +51,7 @@ pipeline {
                         sh '''
                              export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                             export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                            ansible-playbook -i /var/jenkins_home/workspace/aws/terraform/inventory.ini /var/jenkins_home/workspace/aws/terraform/httpd_install.yml
+                            ansible-playbook -i /var/jenkins_home/workspace/aws/terraform/inventory.ini /var/jenkins_home/workspace/aws/terraform/httpd_install.yml  -e 'ansible_ssh_common_args="-o StrictHostKeyChecking=no"'
                         '''
                     }
                 }
